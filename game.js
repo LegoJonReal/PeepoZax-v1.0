@@ -10,6 +10,9 @@ let score = 0;
 let lives = 3;
 let gameOver = false;
 
+// Check if mobile
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 // Player (Pepo with axe)
 const player = {
     x: canvas.width / 2,
@@ -18,7 +21,9 @@ const player = {
     height: 45,
     speed: 5,
     isSwinging: false,
-    swingCooldown: 0
+    swingCooldown: 0,
+    moveX: 0,
+    moveY: 0
 };
 
 // Enemy pepos
@@ -49,6 +54,72 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
+
+// Mobile Controls
+if (isMobile) {
+    // Show mobile controls
+    document.getElementById('mobileControls').classList.add('show');
+    document.getElementById('controlsInfo').innerHTML = '<p>Use joystick to move | Tap 🔪 to attack</p>';
+
+    const joystickArea = document.getElementById('joystickArea');
+    const joystickThumb = document.getElementById('joystickThumb');
+    const attackBtn = document.getElementById('attackBtn');
+
+    let joystickActive = false;
+    let joystickX = 0;
+    let joystickY = 0;
+
+    joystickArea.addEventListener('touchstart', (e) => {
+        joystickActive = true;
+        updateJoystick(e);
+    });
+
+    joystickArea.addEventListener('touchmove', (e) => {
+        if (joystickActive) {
+            e.preventDefault();
+            updateJoystick(e);
+        }
+    });
+
+    joystickArea.addEventListener('touchend', () => {
+        joystickActive = false;
+        joystickThumb.style.transform = 'translate(-50%, -50%)';
+        player.moveX = 0;
+        player.moveY = 0;
+    });
+
+    function updateJoystick(e) {
+        const touch = e.touches[0];
+        const rect = joystickArea.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = rect.width / 2 - 25;
+
+        if (distance > maxDistance) {
+            dx = (dx / distance) * maxDistance;
+            dy = (dy / distance) * maxDistance;
+        }
+
+        joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+        // Normalize movement
+        player.moveX = dx / maxDistance;
+        player.moveY = dy / maxDistance;
+    }
+
+    attackBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        swingAxe();
+    });
+
+    attackBtn.addEventListener('click', () => {
+        swingAxe();
+    });
+}
 
 // Draw Pepe character
 function drawPepe(x, y, color = '#52B788') {
@@ -84,7 +155,7 @@ function drawPepe(x, y, color = '#52B788') {
     ctx.ellipse(x + 8, y - 5, 3 * scale, 4 * scale, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // Smile (sad pepe inspired)
+    // Smile (sad pepo inspired)
     ctx.strokeStyle = '#FF6B6B';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -124,73 +195,4 @@ function spawnEnemy() {
 }
 
 // Swing axe
-function swingAxe() {
-    if (!axe.active && player.swingCooldown <= 0) {
-        axe.active = true;
-        axe.x = player.x;
-        axe.y = player.y;
-        axe.startTime = Date.now();
-        player.swingCooldown = 400;
-    }
-}
-
-// Update player position
-function updatePlayer() {
-    if (keys['ArrowUp'] || keys['w'] || keys['W']) {
-        player.y = Math.max(0, player.y - player.speed);
-    }
-    if (keys['ArrowDown'] || keys['s'] || keys['S']) {
-        player.y = Math.min(canvas.height - player.height, player.y + player.speed);
-    }
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-        player.x = Math.max(0, player.x - player.speed);
-    }
-    if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-        player.x = Math.min(canvas.width - player.width, player.x + player.speed);
-    }
-
-    if (player.swingCooldown > 0) {
-        player.swingCooldown--;
-    }
-}
-
-// Update axe
-function updateAxe() {
-    if (axe.active) {
-        const elapsed = Date.now() - axe.startTime;
-        
-        if (elapsed > axe.duration) {
-            axe.active = false;
-        } else {
-            const progress = elapsed / axe.duration;
-            axe.angle = progress * Math.PI * 2;
-        }
-    }
-}
-
-// Update enemies
-function updateEnemies() {
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        const enemy = enemies[i];
-        
-        // Move towards player
-        enemy.angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-        enemy.x += Math.cos(enemy.angle) * enemy.speed;
-        enemy.y += Math.sin(enemy.angle) * enemy.speed;
-
-        // Check if hit by axe
-        if (axe.active) {
-            const axeX = axe.x + Math.cos(axe.angle) * axe.radius;
-            const axeY = axe.y + Math.sin(axe.angle) * axe.radius;
-            
-            const distance = Math.sqrt(
-                Math.pow(axeX - (enemy.x + enemy.width / 2), 2) +
-                Math.pow(axeY - (enemy.y + enemy.height / 2), 2)
-            );
-
-            if (distance < 25) {
-                enemies.splice(i, 1);
-                score += 10;
-                document.getElementById('score').textContent = score;
-                c
-
+fun};
